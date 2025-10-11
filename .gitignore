@@ -397,4 +397,63 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+.idea/
+*.DotSettings
 
+### 项目特定配置 ###
+
+# 配置文件 - 敏感信息
+appsettings.Development.json
+appsettings.Production.json
+appsettings.*.json
+!appsettings.json
+
+# 数据库相关
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+Migrations/
+
+# EF Core 迁移快照(如需要,取消注释)
+# **/Migrations/**
+
+# OPC UA 证书和密钥
+**/pki/**
+**/PKI/**
+*.der
+*.pfx
+*.p12
+
+# OPC UA 配置文件(包含敏感连接信息)
+opcua-config.json
+opc-servers.json
+
+# 日志文件
+logs/
+*.log
+log-*.txt
+
+# 上传的文件
+wwwroot/uploads/
+wwwroot/files/
+
+# 临时数据和缓存
+temp/
+cache/
+*.tmp
+
+# Docker相关
+docker-compose.override.yml
+.dockerignore
+.env
+.env.local
+
+# 性能分析
+*.diagsession
+*.psess
+
+# 测试覆盖率报告
+TestResults/
+coveragereport/
