@@ -1,0 +1,3 @@
+﻿namespace OpcUaMonitor.Infrastructure;
+
+public interface IOpcUaMonitorInfrastructureFlag;

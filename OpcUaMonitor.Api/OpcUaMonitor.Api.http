@@ -1,0 +1,6 @@
+@OpcUaMonitor.Api_HostAddress = http://localhost:5216
+
+GET {{OpcUaMonitor.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
