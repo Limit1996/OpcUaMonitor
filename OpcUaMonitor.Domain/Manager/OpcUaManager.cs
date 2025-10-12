@@ -15,7 +15,11 @@ public class OpcUaManager : IAsyncDisposable
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
     }
 
-    public async Task StartMonitoringAsync(Channel[] channels,Event[] events, CancellationToken cancellationToken)
+    public async Task StartMonitoringAsync(
+        Channel[] channels,
+        Event[] events,
+        CancellationToken cancellationToken
+    )
     {
         ArgumentNullException.ThrowIfNull(channels);
         ArgumentNullException.ThrowIfNull(events);
@@ -23,12 +27,19 @@ public class OpcUaManager : IAsyncDisposable
         foreach (var channel in channels)
         {
             var provider = new OpcUaProvider(_mediator);
-            var isConnected = await provider.ConnectAsync(config =>
-            {
-                config.ApplicationName = "OpcUaMonitor";
-            }, channel, cancellationToken);
-            if (!isConnected) continue;
-            await provider.RegisterDataChangeHandler(events.ToArray());
+            var isConnected = await provider.ConnectAsync(
+                config =>
+                {
+                    config.ApplicationName = "OpcUaMonitor";
+                },
+                channel,
+                cancellationToken
+            );
+            if (!isConnected)
+                continue;
+            await provider.RegisterDataChangeHandler(
+                events.Where(e => e.Tag.Name.Contains(channel.Name)).ToArray()
+            );
             _opcUaProviders.Add(channel, provider);
         }
     }

@@ -1,7 +1,5 @@
+using OpcUaMonitor.Api.Exceptions;
 using OpcUaMonitor.Api.Extensions;
-using OpcUaMonitor.Api.Hosted;
-using OpcUaMonitor.Application;
-using OpcUaMonitor.Domain;
 using OpcUaMonitor.Domain.Shared;
 using OpcUaMonitor.Domain.Ua;
 using Scalar.AspNetCore;
@@ -12,13 +10,12 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbRepository(builder.Configuration);
 builder.Services.AddOpcService();
 builder.Services.AddClockService();
+builder.Services.AddHostedService();
+builder.Services.AddMediatorService(builder.Configuration);
 
-builder.Services.AddHostedService<OpcUaHostedService>();
-builder.Services.AddMediatR(cfg =>
-{
-    cfg.RegisterServicesFromAssembly(typeof(IOpcUaMonitorDomainFlag).Assembly);
-    cfg.RegisterServicesFromAssembly(typeof(IOpcUaMonitorApplicationFlag).Assembly);
-});
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
+
 
 var app = builder.Build();
 
@@ -29,19 +26,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseExceptionHandler();
 
-app.MapGet("/", () => "Hello World!");
-
-app.MapGet("/event-log", async (IUaRepository repository, CancellationToken token) =>
-{
-    var filter = new EventLogFilter
-    {
-        PageNumber = 1,
-        PageSize = 20
-    };
-
-    var (logs,count) = await repository.GetEventLogsAsync(filter, token);
-    return Results.Ok(new { code = 0, msg = "success", data = logs, total = count });
-});
+app.MapEndpoints();
 
 app.Run();

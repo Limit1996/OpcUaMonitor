@@ -1,5 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using OpcUaMonitor.Api.Endpoints;
+using OpcUaMonitor.Api.Hosted;
+using OpcUaMonitor.Application;
 using OpcUaMonitor.Application.Abstractions.Clock;
+using OpcUaMonitor.Domain;
 using OpcUaMonitor.Domain.Manager;
 using OpcUaMonitor.Domain.Ua;
 using OpcUaMonitor.Infrastructure;
@@ -10,7 +14,7 @@ namespace OpcUaMonitor.Api.Extensions;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddDbRepository(this IServiceCollection services,IConfiguration configuration)
+    public static IServiceCollection AddDbRepository(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<OpcDbContext>(options =>
         {
@@ -19,21 +23,59 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IUaRepository, UaRepository>();
-        
+
         return services;
     }
-    
+
     public static IServiceCollection AddOpcService(this IServiceCollection services)
     {
         services.AddSingleton<IOpcUaProvider, OpcUaProvider>();
         services.AddSingleton<OpcUaManager>();
-        
+
         return services;
     }
-    
+
     public static IServiceCollection AddClockService(this IServiceCollection services)
     {
         services.AddTransient<IDateTimeProvider, NowDateTimeProvider>();
         return services;
+    }
+
+
+    public static IServiceCollection AddMediatorService(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddMediatR(cfg =>
+        {
+            cfg.RegisterServicesFromAssembly(typeof(IOpcUaMonitorDomainFlag).Assembly);
+            cfg.RegisterServicesFromAssembly(typeof(IOpcUaMonitorApplicationFlag).Assembly);
+            cfg.LicenseKey = configuration.GetSection("MediatR:LicenseKey").Value;
+        });
+        return services;
+    }
+
+    public static IServiceCollection AddHostedService(this IServiceCollection services)
+    {
+        services.AddHostedService<OpcUaHostedService>();
+        return services;
+    }
+    
+    public static IEndpointRouteBuilder MapEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpointType = typeof(IEndpoint);
+
+        var assembly = typeof(Program).Assembly;
+
+        var endpointTypes = assembly.GetExportedTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false } && t.IsAssignableTo(endpointType));
+
+        foreach (var type in endpointTypes)
+        {
+            var method = type.GetMethod(nameof(IEndpoint.MapEndpoint),
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+
+            method?.Invoke(null, [app]);
+        }
+
+        return app;
     }
 }
