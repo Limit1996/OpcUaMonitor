@@ -29,7 +29,7 @@ public static class DependencyInjection
 
     public static IServiceCollection AddOpcService(this IServiceCollection services)
     {
-        services.AddSingleton<IOpcUaProvider, OpcUaProvider>();
+        services.AddScoped<IOpcUaProvider, OpcUaProvider>();
         services.AddSingleton<OpcUaManager>();
 
         return services;

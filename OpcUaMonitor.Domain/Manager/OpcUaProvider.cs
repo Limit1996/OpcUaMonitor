@@ -11,6 +11,12 @@ public class OpcUaProvider : IOpcUaProvider
     private Session? _session;
     private Subscription? _subscription;
     private readonly IMediator _mediator;
+    
+    /// <summary>
+    /// 这里最好不要使用public，因为Session的创建是异步的，使用工厂模式会更好
+    /// </summary>
+    /// <param name="mediator"></param>
+    /// <exception cref="ArgumentNullException"></exception>
     public OpcUaProvider(IMediator mediator)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
