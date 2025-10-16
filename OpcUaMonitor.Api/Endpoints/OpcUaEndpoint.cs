@@ -16,10 +16,31 @@ public class OpcUaEndpoint : IEndpoint
         string url,
         string[] tagNames,
         IOpcUaProvider provider,
+        OpcUaManager manager,
         CancellationToken token
     )
     {
-        await provider.ConnectAsync(_ => { }, Channel.Create(url, "temp"), token);
+        var channel = Channel.Create(url, "temp");
+
+        var queryChannel = manager.OpcUaProviders.Keys.FirstOrDefault(c => c.Url == channel.Url);
+
+        if (queryChannel != null)
+        {
+            var scopedProvider = manager.OpcUaProviders[queryChannel];
+            if (tagNames.Length == 1)
+            {
+                var scopedResult = await scopedProvider.ReadAsync<object>(
+                    tagNames.FirstOrDefault()!,
+                    token
+                );
+                return Results.Ok(scopedResult);
+            }
+
+            var scopedMultipleResult = await scopedProvider.ReadMultipleAsync(tagNames, token);
+            return Results.Ok(scopedMultipleResult);
+        }
+
+        await provider.ConnectAsync(_ => { }, channel, token);
 
         if (tagNames.Length == 1)
         {
