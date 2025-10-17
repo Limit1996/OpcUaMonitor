@@ -9,6 +9,7 @@ public class Channel : Entity
     public string Url { get; set; } = string.Empty;
 
     public string Name { get; set; } = string.Empty;
+    
 
     private readonly List<Device> _devices = [];
     public IReadOnlyList<Device> Devices => _devices;

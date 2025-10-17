@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using OpcUaMonitor.Domain.Ua;
 
 
@@ -13,6 +14,7 @@ public class EventLogFilter
     public DateTime? From { get; set; }
     public DateTime? To { get; set; }
     public Guid? TagId { get; set; }
+
     public int PageNumber
     {
         get => _pageNumber;
@@ -42,3 +44,10 @@ public class EventLogFilter
     // 辅助属性
     public int Skip => (PageNumber - 1) * PageSize;
 }
+
+public record ProcessFilter(string Name, Area Area);
+
+public record SysDeviceFilter(
+    string Name,
+    [StringSyntax(StringSyntaxAttribute.Uri)]
+    string IpAddress);

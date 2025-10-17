@@ -14,6 +14,8 @@ public sealed class Device : Entity
     [StringSyntax(StringSyntaxAttribute.Uri)]
     public string IpAddress { get; set; }
     public string Specification { get; set; }
+    
+    public Guid ProcessId { get; }
 
     private readonly List<Channel> _channels = [];
     public IReadOnlyList<Channel> Channels => _channels;

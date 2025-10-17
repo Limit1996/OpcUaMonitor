@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using OpcUaMonitor.Domain.Sys;
 
-namespace OpcUaMonitor.Infrastructure.Sys;
+namespace OpcUaMonitor.Infrastructure.Configurations;
 
 public class ProcessConfiguration : IEntityTypeConfiguration<Process>
 {
@@ -11,13 +11,17 @@ public class ProcessConfiguration : IEntityTypeConfiguration<Process>
         builder.ToTable("Sys_Processes");
         builder.Property(p => p.Name).IsRequired().HasMaxLength(200);
         builder.Property(p => p.Description).HasMaxLength(1000);
-        builder.HasMany(p => p.Devices).WithOne().OnDelete(DeleteBehavior.Cascade);
+        builder
+            .HasMany(p => p.Devices)
+            .WithOne()
+            .HasForeignKey(d => d.ProcessId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(x => x.Name).IsUnique();
     }
 }
 
-public class DeviceConfiguration : IEntityTypeConfiguration<Device>
+public class SysDeviceConfiguration : IEntityTypeConfiguration<Device>
 {
     public void Configure(EntityTypeBuilder<Device> builder)
     {
