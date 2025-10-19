@@ -13,11 +13,13 @@
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Scalar.AspNetCore" Version="2.8.10" />
+        <PackageReference Include="Serilog.Extensions.Logging.File" Version="3.0.0" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\OpcUaMonitor.Domain\OpcUaMonitor.Domain.csproj" />
       <ProjectReference Include="..\OpcUaMonitor.Infrastructure\OpcUaMonitor.Infrastructure.csproj" />
+      <ProjectReference Include="..\OpcUaMonitor.ServiceDefaults\OpcUaMonitor.ServiceDefaults.csproj" />
     </ItemGroup>
 
 </Project>

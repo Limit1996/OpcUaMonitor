@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Client;
 using OpcUaMonitor.Domain.Events;
@@ -9,17 +10,21 @@ namespace OpcUaMonitor.Domain.Manager;
 public class OpcUaProvider : IOpcUaProvider
 {
     private Session? _session;
+    private Channel? _channel;
     private Subscription? _subscription;
     private readonly IMediator _mediator;
-    
+    private readonly ILogger<OpcUaProvider> _logger;
+
     /// <summary>
     /// 这里最好不要使用public，因为Session的创建是异步的，使用工厂模式会更好
     /// </summary>
     /// <param name="mediator"></param>
+    /// <param name="logger"></param>
     /// <exception cref="ArgumentNullException"></exception>
-    public OpcUaProvider(IMediator mediator)
+    public OpcUaProvider(IMediator mediator, ILogger<OpcUaProvider> logger)
     {
-        _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
+        _mediator = mediator;
+        _logger = logger;
     }
     
     public bool IsConnected => _session is { Connected: true };
@@ -75,15 +80,34 @@ public class OpcUaProvider : IOpcUaProvider
         );
 
         var isConnected = _session?.Connected == true;
-
+        if (!isConnected) return isConnected;
+        _channel = channel;
+        _session!.KeepAlive += Session_KeepAlive;
+        _session.KeepAliveInterval = 10000; // 10秒心跳
         return isConnected;
     }
 
+    private void Session_KeepAlive(ISession session, KeepAliveEventArgs e)
+    {
+        if (e.CurrentState != ServerState.Running)
+        {
+            _logger.LogWarning("OPC UA 连接已断开，服务器状态: {Status}", e.CurrentState);
+            _ = Task.Run(async () =>
+            {
+                await DisconnectAsync();
+                await _mediator.Publish(new ConnectionLostEvent(_channel!));
+            });
+        }
+    }
     /// <summary>
     /// OPC UA 断开连接
     /// </summary>
     public async ValueTask DisconnectAsync()
     {
+        if (_session != null)
+        {
+            _session.KeepAlive -= Session_KeepAlive;
+        }
         if (_session is { Connected: true })
         {
             if (_subscription != null)

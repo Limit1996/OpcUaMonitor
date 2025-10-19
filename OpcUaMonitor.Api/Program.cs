@@ -1,11 +1,10 @@
 using OpcUaMonitor.Api.Exceptions;
 using OpcUaMonitor.Api.Extensions;
-using OpcUaMonitor.Api.Hubs;
-using OpcUaMonitor.Domain.Shared;
-using OpcUaMonitor.Domain.Ua;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceDefaults();
 
 builder.Services.AddOpenApi();
 builder.Services.AddDbRepository(builder.Configuration);
@@ -19,8 +18,15 @@ builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
 
 builder.Services.AddSignalR();
 
+builder.Services.AddLogging(loggingBuilder =>
+{
+    loggingBuilder.AddFile(builder.Configuration.GetSection("Logging"));
+});
+
 
 var app = builder.Build();
+
+app.MapDefaultEndpoints();
 
 if (app.Environment.IsDevelopment())
 {
