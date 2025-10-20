@@ -3,18 +3,23 @@ using OpcUaMonitor.Api.Endpoints;
 using OpcUaMonitor.Api.Hosted;
 using OpcUaMonitor.Application;
 using OpcUaMonitor.Application.Abstractions.Clock;
+using OpcUaMonitor.Application.Data;
 using OpcUaMonitor.Domain;
 using OpcUaMonitor.Domain.Manager;
 using OpcUaMonitor.Domain.Ua;
 using OpcUaMonitor.Infrastructure;
 using OpcUaMonitor.Infrastructure.Clock;
+using OpcUaMonitor.Infrastructure.Data;
 using OpcUaMonitor.Infrastructure.Ua;
 
 namespace OpcUaMonitor.Api.Extensions;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddDbRepository(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddDbRepository(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
         services.AddDbContext<OpcDbContext>(options =>
         {
@@ -23,6 +28,16 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IUaRepository, UaRepository>();
+
+        services.AddSingleton<ISqlConnectionFactory>(_ =>
+        {
+            var connString = configuration.GetConnectionString("DefaultConnection");
+            return connString == null
+                ? throw new InvalidOperationException(
+                    "Connection string 'DefaultConnection' not found."
+                )
+                : new SqlConnectionFactory(connString);
+        });
 
         return services;
     }
@@ -41,8 +56,10 @@ public static class DependencyInjection
         return services;
     }
 
-
-    public static IServiceCollection AddMediatorService(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddMediatorService(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
         services.AddMediatR(cfg =>
         {
@@ -58,20 +75,25 @@ public static class DependencyInjection
         services.AddHostedService<OpcUaHostedService>();
         return services;
     }
-    
+
     public static IEndpointRouteBuilder MapEndpoints(this IEndpointRouteBuilder app)
     {
         var endpointType = typeof(IEndpoint);
 
         var assembly = typeof(Program).Assembly;
 
-        var endpointTypes = assembly.GetExportedTypes()
-            .Where(t => t is { IsClass: true, IsAbstract: false } && t.IsAssignableTo(endpointType));
+        var endpointTypes = assembly
+            .GetExportedTypes()
+            .Where(t =>
+                t is { IsClass: true, IsAbstract: false } && t.IsAssignableTo(endpointType)
+            );
 
         foreach (var type in endpointTypes)
         {
-            var method = type.GetMethod(nameof(IEndpoint.MapEndpoint),
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            var method = type.GetMethod(
+                nameof(IEndpoint.MapEndpoint),
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static
+            );
 
             method?.Invoke(null, [app]);
         }
