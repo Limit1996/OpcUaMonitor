@@ -319,6 +319,10 @@ public class OpcUaProvider : IOpcUaProvider
                 if (eventArgs.NotificationValue is not MonitoredItemNotification notification)
                     return;
                 
+                //检测数据是否bad
+                if (StatusCode.IsBad(notification.Value.StatusCode))
+                    return;
+                
                 var value = notification.Value.WrappedValue.Value;
                 var @event = events.FirstOrDefault(e => e.Tag.Name == item.StartNodeId.ToString());
                 

@@ -49,7 +49,7 @@ public class Event : Entity
     {
         return !IsActive 
             ? null 
-            : EventLog.Create(this, value.ToString() ?? string.Empty);
+            : EventLog.Create(this, value?.ToString() ?? string.Empty);
     }
 
     public void UpdateName(string name)
