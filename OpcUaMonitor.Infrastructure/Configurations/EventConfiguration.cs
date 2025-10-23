@@ -15,6 +15,14 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
 
         builder.Property(x => x.TagId).IsRequired();
 
+        builder.Property(x => x.ChannelId).IsRequired();
+        
+        builder
+            .HasOne(c => c.Channel)
+            .WithMany()
+            .HasForeignKey(e => e.ChannelId)
+            .OnDelete(DeleteBehavior.NoAction);
+
         // 显式配置外键关系
         builder
             .HasOne(c => c.Tag)
@@ -30,6 +38,7 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
             .HasIndex(e => new { e.TagId, e.IsActive })
             .HasDatabaseName("IX_Opc_Events_TagId_IsActive")
             .HasFilter("[IsActive] = 1");
+        
     }
 }
 

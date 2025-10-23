@@ -7,10 +7,11 @@ public class Event : Entity
     private string _name = string.Empty;
 
     public string Name => _name;
-    public Guid TagId { get; private set; }
-
-    // 添加 null-forgiving 或设置默认值
     public Tag Tag { get; private set; } = null!;
+    public Guid TagId { get; private set; }
+    
+    public Channel Channel { get; private set; } = null!;
+    public Guid ChannelId { get; private set; }
 
     public bool IsActive { get; private set; }
     
@@ -23,7 +24,7 @@ public class Event : Entity
     // EF Core 构造函数
     private Event() { }
 
-    private Event(Guid id, string name, Guid tagId, string remark)
+    private Event(Guid id, string name, Guid tagId, string remark,Guid channelId)
         : base(id)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -34,12 +35,13 @@ public class Event : Entity
         Remark = remark;
         IsActive = true;
         EventType = EventType.ValueChanged;
+        ChannelId = channelId;
     }
 
-    public static Event Create(string name, Tag tag, string remark)
+    public static Event Create(string name, Tag tag, string remark,Guid channelId)
     {
         ArgumentNullException.ThrowIfNull(tag);
-        return new(Guid.NewGuid(), name, tag.Id, remark);
+        return new(Guid.NewGuid(), name, tag.Id, remark,channelId);
     }
 
     // 改用领域方法

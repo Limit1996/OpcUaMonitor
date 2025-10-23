@@ -9,7 +9,6 @@ public class Channel : Entity
     public string Url { get; set; } = string.Empty;
 
     public string Name { get; set; } = string.Empty;
-    
 
     private readonly List<Device> _devices = [];
     public IReadOnlyList<Device> Devices => _devices;
@@ -28,7 +27,8 @@ public class Channel : Entity
         _devices.Remove(device);
     }
 
-    private Channel() { }
+    private Channel()
+    { }
 
     private Channel(Guid id, string url, string name)
         : base(id)
@@ -37,8 +37,8 @@ public class Channel : Entity
         Name = name;
     }
 
-    public static Channel Create(string url, string name) => new(Guid.NewGuid(), url, name);
-    
+    public static Channel Create(string url, string name) => new(Guid.Empty, url, name);
+
     public IReadOnlyList<Tag> Tags => _devices.SelectMany(d => d.Tags).ToList();
 }
 
@@ -63,7 +63,8 @@ public class Device : Entity
         _tags.Remove(tag);
     }
 
-    private Device() { }
+    private Device()
+    { }
 
     private Device(Guid id, string name)
         : base(id)
@@ -71,7 +72,7 @@ public class Device : Entity
         Name = name;
     }
 
-    public static Device Create(string name) => new(Guid.NewGuid(), name);
+    public static Device Create(string name) => new(Guid.Empty, name);
 }
 
 public class Tag : TagEntity
@@ -84,7 +85,8 @@ public class Tag : TagEntity
 
     public NodeId ToNodeId() => new(Name);
 
-    private Tag() { }
+    private Tag()
+    { }
 
     private Tag(Guid id, string name, string address, DataType dataType, int scanRate, string remark)
         : base(id)
@@ -111,5 +113,5 @@ public class Tag : TagEntity
         DataType dataType,
         int scanRate,
         string remark
-    ) => new(Guid.NewGuid(), name, address, dataType, scanRate, remark);
+    ) => new(Guid.Empty, name, address, dataType, scanRate, remark);
 }

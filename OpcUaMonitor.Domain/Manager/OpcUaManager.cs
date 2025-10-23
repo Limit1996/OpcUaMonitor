@@ -42,7 +42,7 @@ public class OpcUaManager : IAsyncDisposable, INotificationHandler<ConnectionLos
             if (!isConnected)
                 continue;
             await provider.RegisterDataChangeHandler(
-                events.Where(e => e.Tag.Name.Contains(channel.Name)).ToArray()
+                [.. events.Where(e => e.ChannelId == channel.Id)]
             );
             _opcUaProviders.Add(channel, provider);
         }
