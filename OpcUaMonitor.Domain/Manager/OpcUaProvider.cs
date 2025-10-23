@@ -317,11 +317,17 @@ public class OpcUaProvider : IOpcUaProvider
             item.Notification += async (_, eventArgs) =>
             {
                 if (eventArgs.NotificationValue is not MonitoredItemNotification notification)
+                {
+                    _logger.LogWarning("收到不支持的通知类型.");
                     return;
+                }
                 
                 //检测数据是否bad
                 if (StatusCode.IsBad(notification.Value.StatusCode))
+                {
+                    _logger.LogWarning("标签 {Tag} 数据状态异常: {StatusCode}", item.StartNodeId, notification.Value.StatusCode);
                     return;
+                }
                 
                 var value = notification.Value.WrappedValue.Value;
                 var @event = events.FirstOrDefault(e => e.Tag.Name == item.StartNodeId.ToString());
