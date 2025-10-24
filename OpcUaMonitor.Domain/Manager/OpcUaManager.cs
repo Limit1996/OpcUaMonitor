@@ -59,17 +59,17 @@ public class OpcUaManager : IAsyncDisposable, INotificationHandler<ConnectionLos
     public async Task Handle(ConnectionLostEvent notification, CancellationToken cancellationToken)
     {
         var channel = notification.Channel;
-        if (!_opcUaProviders.TryGetValue(channel, out var value))
-            return;
-
-        await value.DisposeAsync();
-        _opcUaProviders.Remove(channel);
+        if (_opcUaProviders.TryGetValue(channel, out var value))
+        {
+            await value.DisposeAsync();
+            _opcUaProviders.Remove(channel);
+        }
 
         // 重试重连（带延迟和重试次数限制）
         for (var i = 1; i <= 3; i++)
         {
             _logger.LogInformation("正在尝试第 {Attempt} 次重连通道 {ChannelUrl}...", i, channel.Url);
-            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+            await Task.Delay(TimeSpan.FromMinutes(i * Math.Pow(10, i - 1)), cancellationToken);
             var providerLogger = _loggerFactory.CreateLogger<OpcUaProvider>();
             var provider = new OpcUaProvider(_mediator, providerLogger);
             if (!await provider.ConnectAsync(_ => { }, channel, cancellationToken))
