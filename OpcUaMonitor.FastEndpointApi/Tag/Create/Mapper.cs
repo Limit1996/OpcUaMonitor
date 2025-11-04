@@ -1,4 +1,4 @@
-﻿namespace Tag.Create;
+﻿namespace OpcUaMonitor.FastEndpointApi.Tag.Create;
 
 internal sealed class Mapper : Mapper<Request, Response, object>
 {

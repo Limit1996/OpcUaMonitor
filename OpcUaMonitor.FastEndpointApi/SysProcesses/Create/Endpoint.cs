@@ -1,7 +1,7 @@
 ﻿using OpcUaMonitor.Domain.Sys;
 using OpcUaMonitor.Infrastructure;
 
-namespace SysProcesses.Create;
+namespace OpcUaMonitor.FastEndpointApi.SysProcesses.Create;
 
 internal sealed class Endpoint : Endpoint<Request, Response, Mapper>
 {

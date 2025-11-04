@@ -1,7 +1,6 @@
-﻿using System;
-using OpcUaMonitor.Domain.Shared;
+﻿using OpcUaMonitor.Domain.Shared;
 
-namespace SysProcesses.Query;
+namespace OpcUaMonitor.FastEndpointApi.SysProcesses.Query;
 
 internal sealed class Endpoint : EndpointWithoutRequest<Response>
 {

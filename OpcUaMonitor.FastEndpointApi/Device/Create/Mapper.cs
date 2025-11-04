@@ -1,4 +1,4 @@
-﻿namespace Device.Create;
+﻿namespace OpcUaMonitor.FastEndpointApi.Device.Create;
 
 internal sealed class Mapper : Mapper<Request, Response, object>
 {

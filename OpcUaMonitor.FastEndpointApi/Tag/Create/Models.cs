@@ -1,6 +1,6 @@
 ﻿using OpcUaMonitor.Domain.Shared;
 
-namespace Tag.Create;
+namespace OpcUaMonitor.FastEndpointApi.Tag.Create;
 
 internal sealed class Request
 {

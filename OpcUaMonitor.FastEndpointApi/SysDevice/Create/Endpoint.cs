@@ -1,6 +1,6 @@
 ﻿using OpcUaMonitor.Infrastructure;
 
-namespace SysDevice.Create;
+namespace OpcUaMonitor.FastEndpointApi.SysDevice.Create;
 
 internal sealed class Endpoint : Endpoint<Request, Response, Mapper>
 {

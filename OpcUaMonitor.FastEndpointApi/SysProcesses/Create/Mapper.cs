@@ -1,6 +1,6 @@
 ﻿using OpcUaMonitor.Domain.Sys;
 
-namespace SysProcesses.Create;
+namespace OpcUaMonitor.FastEndpointApi.SysProcesses.Create;
 
 internal sealed class Mapper : Mapper<Request, Response, object>
 {

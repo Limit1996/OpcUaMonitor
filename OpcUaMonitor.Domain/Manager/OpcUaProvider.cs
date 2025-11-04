@@ -56,6 +56,8 @@ public class OpcUaProvider : IOpcUaProvider
             },
             ClientConfiguration = new ClientConfiguration { DefaultSessionTimeout = 60000 },
         };
+        
+        config(internalConfig);
 
         var endpointDescription = await CoreClientUtils.SelectEndpointAsync(
             internalConfig,

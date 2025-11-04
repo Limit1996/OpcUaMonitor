@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OpcUaMonitor.Infrastructure;
 
-namespace Device.Create;
+namespace OpcUaMonitor.FastEndpointApi.Device.Create;
 
 internal sealed class Endpoint : Endpoint<Request, Response, Mapper>
 {
@@ -28,6 +28,6 @@ internal sealed class Endpoint : Endpoint<Request, Response, Mapper>
 
         _ = await DbContext.SaveChangesAsync(c);
 
-        await Send.OkAsync(new Response());
+        await Send.OkAsync(new Response(), c);
     }
 }

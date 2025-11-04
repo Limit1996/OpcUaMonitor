@@ -1,8 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using OpcUaMonitor.Domain.Sys;
 using OpcUaMonitor.Infrastructure;
 
-namespace Channel.Create;
+namespace OpcUaMonitor.FastEndpointApi.Channel.Create;
 
 internal sealed class Endpoint : Endpoint<Request, Response, Mapper>
 {

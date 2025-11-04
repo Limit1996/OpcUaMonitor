@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OpcUaMonitor.Infrastructure;
 
-namespace Tag.Create;
+namespace OpcUaMonitor.FastEndpointApi.Tag.Create;
 
 internal sealed class Endpoint : Endpoint<Request, Response, Mapper>
 {

@@ -1,4 +1,4 @@
-﻿namespace Channel.Create;
+﻿namespace OpcUaMonitor.FastEndpointApi.Channel.Create;
 
 internal sealed class Mapper : Mapper<Request, Response, object>
 {
