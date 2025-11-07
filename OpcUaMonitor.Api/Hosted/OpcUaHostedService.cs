@@ -30,7 +30,8 @@ public class OpcUaHostedService : BackgroundService
         var channels = await repository.GetChannelsAsync(stoppingToken);
         var events = await repository.GetEventsAsync(stoppingToken);
         
-        await _opcUaManager.StartMonitoringAsync(channels.ToArray(), events.ToArray(), stoppingToken);
+        //await _opcUaManager.StartMonitoringAsync(channels.ToArray(), events.ToArray(), stoppingToken);
+        await _opcUaManager.StartMonitoringAsync(channels.ToArray(), [], stoppingToken);
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)

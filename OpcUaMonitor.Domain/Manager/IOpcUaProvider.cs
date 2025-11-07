@@ -1,4 +1,5 @@
 using Opc.Ua;
+using Opc.Ua.Client;
 using OpcUaMonitor.Domain.Ua;
 
 namespace OpcUaMonitor.Domain.Manager;
@@ -6,6 +7,8 @@ namespace OpcUaMonitor.Domain.Manager;
 public interface IOpcUaProvider : IAsyncDisposable
 {
     bool IsConnected { get; }
+
+    Session? GetSession();
 
     Task<bool> ConnectAsync(
         Action<ApplicationConfiguration> config,

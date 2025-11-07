@@ -10,6 +10,7 @@ namespace OpcUaMonitor.Domain.Tests.Manager;
 public class OpcUaManagerTests
 {
     private OpcUaManager _opcUaManager;
+    private ConnectionLostHandler _connectionLostHandler;
 
     private IMediator _mediator;
     private ILogger<OpcUaManager> _logger;
@@ -41,13 +42,20 @@ public class OpcUaManagerTests
 
         // 使用手写的测试替身，避免 Moq/Castle 代理报错
         _opcUaManager.OpcUaProviders.Add(_channel, new OpcUaProvider(_mediator, new Mock<ILogger<OpcUaProvider>>().Object));
+        
+        _connectionLostHandler = new ConnectionLostHandler(
+            _mediator,
+            new Mock<ILogger<ConnectionLostHandler>>().Object,
+            _loggerFactory,
+            _opcUaManager
+        );
     }
 
     [Test]
     public async Task OpcUaManager_Constructor_ShouldInitializeProperties()
     {
         var notification = new ConnectionLostEvent(_channel);
-        await _opcUaManager.Handle(notification, CancellationToken.None);
+        await _connectionLostHandler.Handle(notification, CancellationToken.None);
         
         var result = _opcUaManager.OpcUaProviders.ContainsKey(_channel);
         Assert.That(result, Is.True);

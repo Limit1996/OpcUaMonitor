@@ -26,8 +26,10 @@ public class OpcUaProvider : IOpcUaProvider
         _mediator = mediator;
         _logger = logger;
     }
-    
+
     public bool IsConnected => _session is { Connected: true };
+
+    public Session? GetSession() => _session;
 
     /// <summary>
     /// OPC UA 连接
@@ -56,7 +58,7 @@ public class OpcUaProvider : IOpcUaProvider
             },
             ClientConfiguration = new ClientConfiguration { DefaultSessionTimeout = 60000 },
         };
-        
+
         config(internalConfig);
 
         var endpointDescription = await CoreClientUtils.SelectEndpointAsync(
@@ -91,15 +93,14 @@ public class OpcUaProvider : IOpcUaProvider
 
     private void Session_KeepAlive(ISession session, KeepAliveEventArgs e)
     {
-        if (e.CurrentState != ServerState.Running)
+        if (e.CurrentState == ServerState.Running)
+            return;
+        _logger.LogWarning("OPC UA 连接已断开，服务器状态: {Status}", e.CurrentState);
+        _ = Task.Run(async () =>
         {
-            _logger.LogWarning("OPC UA 连接已断开，服务器状态: {Status}", e.CurrentState);
-            _ = Task.Run(async () =>
-            {
-                await DisconnectAsync();
-                await _mediator.Publish(new ConnectionLostEvent(_channel!));
-            });
-        }
+            await DisconnectAsync();
+            await _mediator.Publish(new ConnectionLostEvent(_channel!));
+        });
     }
     /// <summary>
     /// OPC UA 断开连接
@@ -118,7 +119,15 @@ public class OpcUaProvider : IOpcUaProvider
                 await _subscription.DeleteAsync(true);
                 _subscription = null;
             }
-            
+            if (_session.Subscriptions != null)
+            {
+                foreach (var sub in _session.Subscriptions)
+                {
+                    await _session.RemoveSubscriptionAsync(sub);
+                    await sub.DeleteAsync(true);
+                }
+            }
+
             await _session.CloseAsync();
             _session.Dispose();
             _session = null;
@@ -258,10 +267,10 @@ public class OpcUaProvider : IOpcUaProvider
         }
 
         var readValues = tags.Select(tag => new ReadValueId
-            {
-                NodeId = new NodeId(tag),
-                AttributeId = Attributes.Value,
-            })
+        {
+            NodeId = new NodeId(tag),
+            AttributeId = Attributes.Value,
+        })
             .ToArray();
 
         var response = await _session!.ReadAsync(
@@ -300,20 +309,20 @@ public class OpcUaProvider : IOpcUaProvider
     {
         EnsureConnected();
         ArgumentNullException.ThrowIfNull(events);
-        
+
         _subscription = new Subscription(_session!.DefaultSubscription)
         {
             PublishingInterval = 1000,
             PublishingEnabled = true
         };
-        
+
         var monitoredItems = events.Select(e => new MonitoredItem(_subscription.DefaultItem)
         {
             StartNodeId = NodeId.Parse(e.Tag.Name),
             AttributeId = Attributes.Value,
             SamplingInterval = 1000,
         }).ToList();
-        
+
         foreach (var item in monitoredItems)
         {
             item.Notification += async (_, eventArgs) =>
@@ -323,17 +332,17 @@ public class OpcUaProvider : IOpcUaProvider
                     _logger.LogWarning("收到不支持的通知类型.");
                     return;
                 }
-                
+
                 //检测数据是否bad
                 if (StatusCode.IsBad(notification.Value.StatusCode))
                 {
                     _logger.LogWarning("标签 {Tag} 数据状态异常: {StatusCode}", item.StartNodeId, notification.Value.StatusCode);
                     return;
                 }
-                
+
                 var value = notification.Value.WrappedValue.Value;
                 var @event = events.FirstOrDefault(e => e.Tag.Name == item.StartNodeId.ToString());
-                
+
                 var log = @event?.TryCreateLog(value);
                 if (log == null) return;
                 //Console.WriteLine($"Event: {@event?.Name}, Value: {log.Value}, Timestamp: {log.Timestamp}");
@@ -354,19 +363,19 @@ public class OpcUaProvider : IOpcUaProvider
     {
         EnsureConnected();
         ArgumentNullException.ThrowIfNull(events);
-        
+
         if (_subscription == null)
             return;
-        
+
         var itemsToRemove = _subscription.MonitoredItems
             .Where(mi => events.Any(e => e.Tag.Name == mi.StartNodeId.ToString()))
             .ToList();
-        
+
         foreach (var item in itemsToRemove)
         {
             _subscription.RemoveItem(item);
         }
-        
+
         if (!_subscription.MonitoredItems.Any())
         {
             await _session!.RemoveSubscriptionAsync(_subscription);
