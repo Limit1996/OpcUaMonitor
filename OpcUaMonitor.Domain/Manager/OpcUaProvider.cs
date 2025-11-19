@@ -102,6 +102,7 @@ public class OpcUaProvider : IOpcUaProvider
             await _mediator.Publish(new ConnectionLostEvent(_channel!));
         });
     }
+
     /// <summary>
     /// OPC UA 断开连接
     /// </summary>
@@ -111,6 +112,7 @@ public class OpcUaProvider : IOpcUaProvider
         {
             _session.KeepAlive -= Session_KeepAlive;
         }
+
         if (_session is { Connected: true })
         {
             if (_subscription != null)
@@ -119,6 +121,7 @@ public class OpcUaProvider : IOpcUaProvider
                 await _subscription.DeleteAsync(true);
                 _subscription = null;
             }
+
             if (_session.Subscriptions != null)
             {
                 foreach (var sub in _session.Subscriptions)
@@ -267,10 +270,10 @@ public class OpcUaProvider : IOpcUaProvider
         }
 
         var readValues = tags.Select(tag => new ReadValueId
-        {
-            NodeId = new NodeId(tag),
-            AttributeId = Attributes.Value,
-        })
+            {
+                NodeId = new NodeId(tag),
+                AttributeId = Attributes.Value,
+            })
             .ToArray();
 
         var response = await _session!.ReadAsync(
@@ -316,7 +319,7 @@ public class OpcUaProvider : IOpcUaProvider
             PublishingEnabled = true
         };
 
-        var monitoredItems = events.Select(e => new MonitoredItem(_subscription.DefaultItem)
+        var monitoredItems = events.Select(e => new MonitoredItem
         {
             StartNodeId = NodeId.Parse(e.Tag.Name),
             AttributeId = Attributes.Value,
@@ -336,7 +339,8 @@ public class OpcUaProvider : IOpcUaProvider
                 //检测数据是否bad
                 if (StatusCode.IsBad(notification.Value.StatusCode))
                 {
-                    _logger.LogWarning("标签 {Tag} 数据状态异常: {StatusCode}", item.StartNodeId, notification.Value.StatusCode);
+                    _logger.LogWarning("标签 {Tag} 数据状态异常: {StatusCode}", item.StartNodeId,
+                        notification.Value.StatusCode);
                     return;
                 }
 
@@ -351,8 +355,9 @@ public class OpcUaProvider : IOpcUaProvider
             };
             _subscription.AddItem(item);
             _session!.AddSubscription(_subscription);
-            await _subscription.CreateAsync();
         }
+
+        await _subscription.CreateAsync();
     }
 
     /// <summary>
