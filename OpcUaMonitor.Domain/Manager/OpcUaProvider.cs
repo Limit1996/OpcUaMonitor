@@ -96,11 +96,13 @@ public class OpcUaProvider : IOpcUaProvider
         if (e.CurrentState == ServerState.Running)
             return;
         _logger.LogWarning("OPC UA 连接已断开，服务器状态: {Status}", e.CurrentState);
-        _ = Task.Run(async () =>
+        Task.Run(async () =>
         {
+            _logger.LogDebug("正在处理断开连接事件...");
             await DisconnectAsync();
             await _mediator.Publish(new ConnectionLostEvent(_channel!));
-        });
+            _logger.LogDebug("断开连接事件处理完成.");
+        }).GetAwaiter().GetResult();
     }
 
     /// <summary>
