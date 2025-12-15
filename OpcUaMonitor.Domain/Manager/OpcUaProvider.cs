@@ -84,7 +84,8 @@ public class OpcUaProvider : IOpcUaProvider
         );
 
         var isConnected = _session?.Connected == true;
-        if (!isConnected) return isConnected;
+        if (!isConnected)
+            return isConnected;
         _channel = channel;
         _session!.KeepAlive += Session_KeepAlive;
         _session.KeepAliveInterval = 10000; // 10秒心跳
@@ -97,12 +98,14 @@ public class OpcUaProvider : IOpcUaProvider
             return;
         _logger.LogWarning("OPC UA 连接已断开，服务器状态: {Status}", e.CurrentState);
         Task.Run(async () =>
-        {
-            _logger.LogDebug("正在处理断开连接事件...");
-            await DisconnectAsync();
-            await _mediator.Publish(new ConnectionLostEvent(_channel!));
-            _logger.LogDebug("断开连接事件处理完成.");
-        }).GetAwaiter().GetResult();
+            {
+                _logger.LogDebug("正在处理断开连接事件...");
+                await DisconnectAsync();
+                await _mediator.Publish(new ConnectionLostEvent(_channel!));
+                _logger.LogDebug("断开连接事件处理完成.");
+            })
+            .GetAwaiter()
+            .GetResult();
     }
 
     /// <summary>
@@ -147,7 +150,11 @@ public class OpcUaProvider : IOpcUaProvider
     /// <param name="cancellationToken"></param>
     /// <typeparam name="T"></typeparam>
     /// <exception cref="InvalidOperationException"></exception>
-    public async Task WriteAsync<T>(string tag, T value, CancellationToken cancellationToken = default)
+    public async Task WriteAsync<T>(
+        string tag,
+        T value,
+        CancellationToken cancellationToken = default
+    )
     {
         EnsureConnected();
         ArgumentException.ThrowIfNullOrWhiteSpace(tag);
@@ -203,14 +210,17 @@ public class OpcUaProvider : IOpcUaProvider
 
         for (var i = 0; i < response.Results.Count; i++)
         {
-            if (!StatusCode.IsBad(response.Results[i])) continue;
+            if (!StatusCode.IsBad(response.Results[i]))
+                continue;
             var tag = tags[i];
             failedTags.Add(tag);
         }
 
         if (failedTags.Count > 0)
         {
-            throw new InvalidOperationException($"以下标签写入失败: {string.Join(", ", failedTags)}");
+            throw new InvalidOperationException(
+                $"以下标签写入失败: {string.Join(", ", failedTags)}"
+            );
         }
     }
 
@@ -230,7 +240,7 @@ public class OpcUaProvider : IOpcUaProvider
         var readValue = new ReadValueId
         {
             NodeId = new NodeId(tag),
-            AttributeId = Attributes.Value
+            AttributeId = Attributes.Value,
         };
 
         var response = await _session!.ReadAsync(
@@ -317,16 +327,18 @@ public class OpcUaProvider : IOpcUaProvider
 
         _subscription = new Subscription(_session!.DefaultSubscription)
         {
-            PublishingInterval = 1000,
-            PublishingEnabled = true
+            PublishingInterval = 100,
+            PublishingEnabled = true,
         };
 
-        var monitoredItems = events.Select(e => new MonitoredItem
-        {
-            StartNodeId = NodeId.Parse(e.Tag.Name),
-            AttributeId = Attributes.Value,
-            SamplingInterval = 1000,
-        }).ToList();
+        var monitoredItems = events
+            .Select(e => new MonitoredItem
+            {
+                StartNodeId = NodeId.Parse(e.Tag.Name),
+                AttributeId = Attributes.Value,
+                SamplingInterval = 100,
+            })
+            .ToList();
 
         foreach (var item in monitoredItems)
         {
@@ -341,8 +353,11 @@ public class OpcUaProvider : IOpcUaProvider
                 //检测数据是否bad
                 if (StatusCode.IsBad(notification.Value.StatusCode))
                 {
-                    _logger.LogWarning("标签 {Tag} 数据状态异常: {StatusCode}", item.StartNodeId,
-                        notification.Value.StatusCode);
+                    _logger.LogWarning(
+                        "标签 {Tag} 数据状态异常: {StatusCode}",
+                        item.StartNodeId,
+                        notification.Value.StatusCode
+                    );
                     return;
                 }
 
@@ -350,7 +365,14 @@ public class OpcUaProvider : IOpcUaProvider
                 var @event = events.FirstOrDefault(e => e.Tag.Name == item.StartNodeId.ToString());
 
                 var log = @event?.TryCreateLog(value);
-                if (log == null) return;
+                if (log == null)
+                    return;
+                log.Parameters = new Dictionary<string, object>
+                {
+                    { "SourceTimestamp", notification.Value.SourceTimestamp },
+                    { "ServerTimestamp", notification.Value.ServerTimestamp },
+                    { "CurrentNodeId", item.StartNodeId },
+                };
                 //Console.WriteLine($"Event: {@event?.Name}, Value: {log.Value}, Timestamp: {log.Timestamp}");
                 //await _uaRepository.AddEventLogAsync(log, CancellationToken.None);
                 await _mediator.Publish(new EventLogCreatedEvent(log), CancellationToken.None);
@@ -374,8 +396,8 @@ public class OpcUaProvider : IOpcUaProvider
         if (_subscription == null)
             return;
 
-        var itemsToRemove = _subscription.MonitoredItems
-            .Where(mi => events.Any(e => e.Tag.Name == mi.StartNodeId.ToString()))
+        var itemsToRemove = _subscription
+            .MonitoredItems.Where(mi => events.Any(e => e.Tag.Name == mi.StartNodeId.ToString()))
             .ToList();
 
         foreach (var item in itemsToRemove)
@@ -397,7 +419,6 @@ public class OpcUaProvider : IOpcUaProvider
 
     public ValueTask DisposeAsync() => DisconnectAsync();
 
-
     private void EnsureConnected()
     {
         if (_session?.Connected != true)
@@ -415,13 +436,15 @@ public class OpcUaProvider : IOpcUaProvider
                 T directValue => directValue,
                 null when default(T) is null => default!,
                 null => throw new InvalidOperationException("无法将 null 转换为值类型"),
-                _ => (T)Convert.ChangeType(value, typeof(T))
+                _ => (T)Convert.ChangeType(value, typeof(T)),
             };
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"类型转换失败，无法将 {value?.GetType().Name ?? "null"} 转换为 {typeof(T).Name}",
-                ex);
+            throw new InvalidOperationException(
+                $"类型转换失败，无法将 {value?.GetType().Name ?? "null"} 转换为 {typeof(T).Name}",
+                ex
+            );
         }
     }
 }

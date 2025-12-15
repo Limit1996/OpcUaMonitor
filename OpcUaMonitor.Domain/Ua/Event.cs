@@ -69,6 +69,8 @@ public class EventLog : Entity
     public Guid EventId { get; private set; }
     public Event Event { get; private set; }
     public DateTime Timestamp { get; private set; } = DateTime.Now;
+    
+    public Dictionary<string,object> Parameters { get; set; } = new();
     public string Value { get; private set; }
 
     private EventLog() { }

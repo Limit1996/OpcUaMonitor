@@ -52,6 +52,8 @@ public class EventLogConfiguration : IEntityTypeConfiguration<EventLog>
         builder.Property(x => x.Value).HasMaxLength(500).IsRequired();
         builder.Property(x => x.Timestamp).IsRequired().HasDefaultValue(DateTime.Now);
 
+        builder.Ignore(x => x.Parameters);
+
         builder
             .HasOne(c => c.Event)
             .WithMany()

@@ -12,7 +12,8 @@ public class OpcUaHostedService : BackgroundService
     public OpcUaHostedService(
         IServiceScopeFactory scopeFactory,
         OpcUaManager opcUaManager,
-        ILogger<OpcUaHostedService> logger)
+        ILogger<OpcUaHostedService> logger
+    )
     {
         _scopeFactory = scopeFactory;
         _opcUaManager = opcUaManager;
@@ -26,11 +27,17 @@ public class OpcUaHostedService : BackgroundService
         // 启动时初始化连接
         using var scope = _scopeFactory.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IUaRepository>();
-        
+
         var channels = await repository.GetChannelsAsync(stoppingToken);
         var events = await repository.GetEventsAsync(stoppingToken);
         
-        await _opcUaManager.StartMonitoringAsync(channels.ToArray(), events.ToArray(), stoppingToken);
+        // 只监控普通ValueChanged事件
+        await _opcUaManager.StartMonitoringAsync(
+            channels.ToArray(),
+            //events.Where(e => e.EventType == EventType.Custom).ToArray(),
+            events.ToArray(),
+            stoppingToken
+        );
         // await _opcUaManager.StartMonitoringAsync(channels.ToArray(), [], stoppingToken);
     }
 
