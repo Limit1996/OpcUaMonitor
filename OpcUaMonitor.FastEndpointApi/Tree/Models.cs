@@ -21,8 +21,6 @@ internal sealed class TreeRequest
             RuleFor(r => r.Area)
                 .IsInEnum()
                 .WithMessage("Area值无效");
-
-            
         }
     }
 }
