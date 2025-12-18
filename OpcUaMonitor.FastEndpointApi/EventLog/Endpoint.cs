@@ -32,7 +32,8 @@ internal sealed class Endpoint : Endpoint<EventLogRequest, List<EventLogResponse
                 where ({deviceName} is null or t4.Name = {deviceName})
                 and ({req.TagRemark} is null or t3.Remark like {tagAddressPattern})
                 and ({values} = '' or t.Value in ({values}))
-                and t.Timestamp between {req.StartTime} and {req.EndTime}
+                and t.Timestamp >= {req.StartTime} 
+                and t.Timestamp <= {req.EndTime}
                 order by t.Timestamp desc
                 """
             )

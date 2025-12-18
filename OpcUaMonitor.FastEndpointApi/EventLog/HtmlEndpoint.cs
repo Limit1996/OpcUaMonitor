@@ -70,7 +70,7 @@ public class HtmlEndpoint : EndpointWithoutRequest
                                   <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
                                       <div class="p-6">
                                           <form id="query-form" class="grid gap-x-6 gap-y-4 md:grid-cols-2 lg:grid-cols-3">
-                                              
+
                                               <!-- 表单项：一行显示 -->
                                               <div class="flex items-center gap-3">
                                                   <label class="w-20 text-sm font-medium text-right shrink-0">设备名称</label>
@@ -86,7 +86,7 @@ public class HtmlEndpoint : EndpointWithoutRequest
 
                                               <div class="flex items-center gap-3">
                                                   <label class="w-20 text-sm font-medium text-right shrink-0">数值筛选</label>
-                                                  <input type="text" name="values" placeholder="例如: 1"
+                                                  <input type="text" name="values" placeholder="例如: 1, 0 (逗号分隔)"
                                                          class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
                                               </div>
 
@@ -171,7 +171,8 @@ public class HtmlEndpoint : EndpointWithoutRequest
                                           </tr>`).join('');
                                   };
 
-                                  const toIsoOrNull = (value) => value ? new Date(value).toISOString() : null;
+                                  // 修改：不再转换为 UTC，而是附加 +08:00 时区偏移
+                                  const toChinaTime = (value) => value ? `${value}:00+08:00` : null;
 
                                   form.addEventListener('submit', async (e) => {
                                       e.preventDefault();
@@ -187,8 +188,9 @@ public class HtmlEndpoint : EndpointWithoutRequest
                                               deviceName: form.deviceName.value || null,
                                               tagRemark: form.tagRemark.value || null,
                                               values: valuesArray,
-                                              startTime: toIsoOrNull(form.startTime.value),
-                                              endTime: toIsoOrNull(form.endTime.value)
+                                              // 使用东八区时间
+                                              startTime: toChinaTime(form.startTime.value),
+                                              endTime: toChinaTime(form.endTime.value)
                                           };
 
                                           const response = await fetch(endpoint, {
