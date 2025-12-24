@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mix.Core", "Mix.Core\Mix.Co
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mix.Console", "Mix.Console\Mix.Console.csproj", "{D1D310FA-7581-4F4D-A5A0-A09CA55D8BB2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpcUaMonitor.Infrastructure.Tests", "OpcUaMonitor.Infrastructure.Tests\OpcUaMonitor.Infrastructure.Tests.csproj", "{D3488EE2-2F95-48CA-954C-7E2154F2B9F4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -79,6 +81,10 @@ Global
 		{D1D310FA-7581-4F4D-A5A0-A09CA55D8BB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D1D310FA-7581-4F4D-A5A0-A09CA55D8BB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D1D310FA-7581-4F4D-A5A0-A09CA55D8BB2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3488EE2-2F95-48CA-954C-7E2154F2B9F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3488EE2-2F95-48CA-954C-7E2154F2B9F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3488EE2-2F95-48CA-954C-7E2154F2B9F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3488EE2-2F95-48CA-954C-7E2154F2B9F4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -88,6 +94,7 @@ Global
 		{CB2704E5-8B0B-48AD-9B34-416D4B8D5EC9} = {F29FFB4D-3D73-4ACB-8E0B-C980BA28AFB9}
 		{957A8253-CA25-498C-8DB7-8231DC032F22} = {F29FFB4D-3D73-4ACB-8E0B-C980BA28AFB9}
 		{D1D310FA-7581-4F4D-A5A0-A09CA55D8BB2} = {F29FFB4D-3D73-4ACB-8E0B-C980BA28AFB9}
+		{D3488EE2-2F95-48CA-954C-7E2154F2B9F4} = {7EAD1012-E250-430C-815B-9EE9DE000C44}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {58DE1FFE-C34C-400B-877D-85F4EADA0B10}

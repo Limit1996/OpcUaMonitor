@@ -47,10 +47,16 @@ public class Event : Entity
     // 改用领域方法
     public EventLog? TryCreateLog(object value)
     {
-        return !IsActive 
-            ? null 
+        if (value is Array array)
+        {
+            value = $"[{string.Join(",", array.Cast<object>())}]";
+        }
+
+        return !IsActive
+            ? null
             : EventLog.Create(this, value?.ToString() ?? string.Empty);
     }
+
 
     public void UpdateName(string name)
     {
@@ -91,4 +97,5 @@ public enum EventType
 {
     ValueChanged,
     Custom,
+    Push
 }

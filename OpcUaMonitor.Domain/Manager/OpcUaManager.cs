@@ -27,7 +27,7 @@ public class OpcUaManager : IAsyncDisposable
     )
     {
         ArgumentNullException.ThrowIfNull(channels);
-        ArgumentNullException.ThrowIfNull(events);
+        //ArgumentNullException.ThrowIfNull(events);
 
         var providerLogger = _loggerFactory.CreateLogger<OpcUaProvider>();
         foreach (var channel in channels)

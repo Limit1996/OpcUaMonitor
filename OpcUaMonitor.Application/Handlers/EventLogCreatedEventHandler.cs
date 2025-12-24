@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using OpcUaMonitor.Application.Abstractions.Sms;
 using OpcUaMonitor.Domain.Events;
 using OpcUaMonitor.Domain.Manager;
 using OpcUaMonitor.Domain.Ua;
@@ -13,15 +14,19 @@ public class EventLogCreatedEventHandler : INotificationHandler<EventLogCreatedE
     private readonly ILogger<EventLogCreatedEventHandler> _logger;
     private readonly OpcUaManager _opcUaManager;
 
+    private readonly IMessageSender _messageSender;
+
     public EventLogCreatedEventHandler(
         IServiceScopeFactory scopeFactory,
         ILogger<EventLogCreatedEventHandler> logger,
-        OpcUaManager opcUaManager
+        OpcUaManager opcUaManager,
+        IMessageSender messageSender
     )
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
         _opcUaManager = opcUaManager;
+        _messageSender = messageSender;
     }
 
     public async Task Handle(EventLogCreatedEvent notification, CancellationToken cancellationToken)
@@ -58,6 +63,17 @@ public class EventLogCreatedEventHandler : INotificationHandler<EventLogCreatedE
                 await repository.AddEventLogAsync(insertLog, cancellationToken);
                 return;
             }
+
+            if (eventLog is { Event.EventType: EventType.Push })
+            {
+                var message =
+                    $"区域: {eventLog.Event.Channel.Name}, 标签: {eventLog.Event.Tag.Remark}, 地址: {eventLog.Event.Tag.Name}, 当前值: {eventLog.Value}, 时间: {eventLog.Timestamp:yyyy-MM-dd HH:mm:ss}";
+
+                await _messageSender.SendAsync(string.Empty, message);
+
+                return;
+            }
+
             await repository.AddEventLogAsync(notification.EventLog, cancellationToken);
         }
         catch (Exception ex)

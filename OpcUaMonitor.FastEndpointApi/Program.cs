@@ -21,6 +21,7 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+app.UseStaticFiles();
 app.UseCors("AllowAll");
 app.UseDefaultExceptionHandler().UseFastEndpoints().UseSwaggerGen();
 app.Run();

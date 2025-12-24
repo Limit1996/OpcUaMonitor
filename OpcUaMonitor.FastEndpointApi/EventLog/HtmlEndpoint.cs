@@ -17,7 +17,7 @@ public class HtmlEndpoint : EndpointWithoutRequest
                               <meta charset="utf-8" />
                               <meta name="viewport" content="width=device-width, initial-scale=1.0" />
                               <title>事件日志查询</title>
-                              <script src="https://cdn.tailwindcss.com"></script>
+                              <script src="/js/tailwindcss.js"></script>
                               <script>
                                   tailwind.config = {
                                       theme: {

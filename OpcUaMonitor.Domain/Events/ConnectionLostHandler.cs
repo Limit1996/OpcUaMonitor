@@ -27,6 +27,7 @@ public class ConnectionLostHandler :INotificationHandler<ConnectionLostEvent>
     
     public async Task Handle(ConnectionLostEvent notification, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("通道 {ChannelUrl} 连接丢失，正在尝试重连...", notification.Channel.Url);
         var opcUaProviders = _opcUaManager.OpcUaProviders;
         var channel = notification.Channel;
         if (opcUaProviders.TryGetValue(channel, out var value))

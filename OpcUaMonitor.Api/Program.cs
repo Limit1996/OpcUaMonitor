@@ -10,6 +10,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbRepository(builder.Configuration);
 builder.Services.AddOpcService();
 builder.Services.AddClockService();
+builder.Services.AddMessageSender(builder.Configuration);
 builder.Services.AddHostedService();
 builder.Services.AddMediatorService(builder.Configuration);
 

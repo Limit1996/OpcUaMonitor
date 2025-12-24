@@ -96,17 +96,28 @@ public class OpcUaProvider : IOpcUaProvider
     {
         if (e.CurrentState == ServerState.Running)
             return;
-        _logger.LogWarning("OPC UA 连接已断开，服务器状态: {Status}", e.CurrentState);
-        Task.Run(async () =>
+
+        _logger.LogWarning("OPC UA 连接已断开，服务器状态: {Status}，连接：{Connection}", e.CurrentState,
+            session.Endpoint.EndpointUrl);
+
+        _ = Task.Run(async () =>
+        {
+            try
             {
                 _logger.LogDebug("正在处理断开连接事件...");
                 await DisconnectAsync();
+                _logger.LogDebug("断开连接完成，发布断开连接事件...{channel}", _channel);
                 await _mediator.Publish(new ConnectionLostEvent(_channel!));
+                _logger.LogDebug("断开连接事件已发布.");
                 _logger.LogDebug("断开连接事件处理完成.");
-            })
-            .GetAwaiter()
-            .GetResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "处理断开连接事件时发生异常");
+            }
+        });
     }
+
 
     /// <summary>
     /// OPC UA 断开连接
@@ -325,6 +336,9 @@ public class OpcUaProvider : IOpcUaProvider
         EnsureConnected();
         ArgumentNullException.ThrowIfNull(events);
 
+        if (events.Length == 0)
+            return;
+
         _subscription = new Subscription(_session!.DefaultSubscription)
         {
             PublishingInterval = 100,
@@ -362,6 +376,7 @@ public class OpcUaProvider : IOpcUaProvider
                 }
 
                 var value = notification.Value.WrappedValue.Value;
+
                 var @event = events.FirstOrDefault(e => e.Tag.Name == item.StartNodeId.ToString());
 
                 var log = @event?.TryCreateLog(value);

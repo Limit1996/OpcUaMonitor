@@ -1,8 +1,10 @@
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using OpcUaMonitor.Api.Endpoints;
 using OpcUaMonitor.Api.Hosted;
 using OpcUaMonitor.Application;
 using OpcUaMonitor.Application.Abstractions.Clock;
+using OpcUaMonitor.Application.Abstractions.Sms;
 using OpcUaMonitor.Application.Data;
 using OpcUaMonitor.Domain;
 using OpcUaMonitor.Domain.Manager;
@@ -10,6 +12,7 @@ using OpcUaMonitor.Domain.Ua;
 using OpcUaMonitor.Infrastructure;
 using OpcUaMonitor.Infrastructure.Clock;
 using OpcUaMonitor.Infrastructure.Data;
+using OpcUaMonitor.Infrastructure.Sms;
 using OpcUaMonitor.Infrastructure.Ua;
 
 namespace OpcUaMonitor.Api.Extensions;
@@ -53,6 +56,22 @@ public static class DependencyInjection
     public static IServiceCollection AddClockService(this IServiceCollection services)
     {
         services.AddTransient<IDateTimeProvider, NowDateTimeProvider>();
+        return services;
+    }
+
+    public static IServiceCollection AddMessageSender(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
+    {
+        services.AddHttpClient<IMessageSender, EnterpriseWechatMessageSender>(client =>
+        {
+            if (string.IsNullOrEmpty(configuration["Sms:EnterpriseWechat:HttpUrl"]))
+                throw new InvalidOperationException("Enterprise Wechat UserIds configuration is missing.");
+
+            client.BaseAddress = new Uri(configuration["Sms:EnterpriseWechat:HttpUrl"]!);
+            client.Timeout = TimeSpan.FromSeconds(5);
+        });
         return services;
     }
 
