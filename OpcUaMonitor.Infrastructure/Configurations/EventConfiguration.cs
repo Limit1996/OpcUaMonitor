@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using OpcUaMonitor.Domain.Ua;
@@ -52,7 +53,16 @@ public class EventLogConfiguration : IEntityTypeConfiguration<EventLog>
         builder.Property(x => x.Value).HasMaxLength(500).IsRequired();
         builder.Property(x => x.Timestamp).IsRequired().HasDefaultValue(DateTime.Now);
 
-        builder.Ignore(x => x.Parameters);
+        // builder.Ignore(x => x.Parameters);
+        builder.Property(x => x.Parameters)
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, JsonSerializerOptions.Default),
+                v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, JsonSerializerOptions.Default) 
+                     ?? new Dictionary<string, object>()
+            )
+            .HasColumnType("nvarchar(max)")
+            .HasColumnName("Parameters");
+
 
         builder
             .HasOne(c => c.Event)

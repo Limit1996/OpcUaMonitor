@@ -9,7 +9,7 @@ internal sealed class EventLogRequest
     public string[]? Values { get; set; }
 
     public DateTime? StartTime { get; set; } = DateTime.Now.AddDays(-1);
-    
+
     public DateTime? EndTime { get; set; } = DateTime.Now;
 
     internal sealed class Validator : Validator<EventLogRequest>
@@ -34,4 +34,5 @@ internal sealed class EventLogResponse
     public string? TagRemark { get; set; }
     public string? Value { get; set; }
     public DateTime Timestamp { get; set; }
+    public string? Parameters { get; set; }
 }

@@ -23,7 +23,7 @@ internal sealed class Endpoint : Endpoint<EventLogRequest, List<EventLogResponse
         var result = await DbContext
             .Database.SqlQuery<EventLogResponse>(
                 $"""
-                select t4.Name as DeviceName, t3.Name as TagAddress, t3.Remark as TagRemark, t.Timestamp, t.Value
+                select t4.Name as DeviceName, t3.Name as TagAddress, t3.Remark as TagRemark, t.Timestamp, t.Value ,t.Parameters
                 from Opc_EventLogs t
                          left join Opc_Events t1 on t.EventId = t1.id
                          left Join Opc_Channels t2 on t2.id = t1.ChannelId

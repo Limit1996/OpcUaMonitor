@@ -382,10 +382,11 @@ public class OpcUaProvider : IOpcUaProvider
                 var log = @event?.TryCreateLog(value);
                 if (log == null)
                     return;
+                
                 log.Parameters = new Dictionary<string, object>
                 {
-                    { "SourceTimestamp", notification.Value.SourceTimestamp },
-                    { "ServerTimestamp", notification.Value.ServerTimestamp },
+                    { "SourceTimestamp", notification.Value.SourceTimestamp.ToLocalTime() },
+                    { "ServerTimestamp", notification.Value.ServerTimestamp.ToLocalTime() },
                     { "CurrentNodeId", item.StartNodeId },
                 };
                 //Console.WriteLine($"Event: {@event?.Name}, Value: {log.Value}, Timestamp: {log.Timestamp}");

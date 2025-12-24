@@ -52,7 +52,6 @@ public class HtmlEndpoint : EndpointWithoutRequest
                               </script>
                               <style>
                                   body { font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif; }
-                                  /* 修复日期控件图标位置 */
                                   input[type="datetime-local"]::-webkit-calendar-picker-indicator {
                                       cursor: pointer;
                                   }
@@ -60,18 +59,14 @@ public class HtmlEndpoint : EndpointWithoutRequest
                           </head>
                           <body class="bg-background text-foreground p-6 min-h-screen flex flex-col items-center">
                               <div class="w-full max-w-7xl space-y-6">
-                                  <!-- 标题区域 -->
                                   <div class="space-y-1">
                                       <h1 class="text-2xl font-bold tracking-tight">事件日志查询</h1>
                                       <p class="text-muted-foreground text-sm">查看和筛选 OPC UA 历史事件记录。</p>
                                   </div>
 
-                                  <!-- 查询表单卡片 -->
                                   <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
                                       <div class="p-6">
                                           <form id="query-form" class="grid gap-x-6 gap-y-4 md:grid-cols-2 lg:grid-cols-3">
-
-                                              <!-- 表单项：一行显示 -->
                                               <div class="flex items-center gap-3">
                                                   <label class="w-20 text-sm font-medium text-right shrink-0">设备名称</label>
                                                   <input type="text" name="deviceName" placeholder="输入设备名称..."
@@ -102,7 +97,6 @@ public class HtmlEndpoint : EndpointWithoutRequest
                                                          class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
                                               </div>
 
-                                              <!-- 按钮区域 -->
                                               <div class="flex items-center justify-end">
                                                   <button type="submit"
                                                           class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-6 py-2 w-full md:w-auto">
@@ -113,10 +107,8 @@ public class HtmlEndpoint : EndpointWithoutRequest
                                       </div>
                                   </div>
 
-                                  <!-- 状态提示 -->
                                   <div id="status" class="text-sm text-muted-foreground h-5 flex items-center px-1"></div>
 
-                                  <!-- 数据表格 -->
                                   <div class="rounded-md border bg-card">
                                       <div class="relative w-full overflow-auto">
                                           <table class="w-full caption-bottom text-sm">
@@ -126,12 +118,13 @@ public class HtmlEndpoint : EndpointWithoutRequest
                                                       <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">标签地址</th>
                                                       <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">备注</th>
                                                       <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">值</th>
-                                                      <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">时间戳</th>
+                                                      <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Server时间戳</th>
+                                                      <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Metadata</th>
                                                   </tr>
                                               </thead>
                                               <tbody id="result-body" class="[&_tr:last-child]:border-0">
                                                   <tr class="border-b transition-colors hover:bg-muted/50">
-                                                      <td colspan="5" class="p-4 text-center text-muted-foreground">暂无数据，请点击查询</td>
+                                                      <td colspan="6" class="p-4 text-center text-muted-foreground">暂无数据，请点击查询</td>
                                                   </tr>
                                               </tbody>
                                           </table>
@@ -156,9 +149,26 @@ public class HtmlEndpoint : EndpointWithoutRequest
                                       form.endTime.value = toLocalInput(end);
                                   };
 
+                                  const formatParams = (params) => {
+                                      if (!params) return '-';
+                                      try {
+                                          const obj = typeof params === 'string' ? JSON.parse(params) : params;
+                                          const entries = Object.entries(obj).slice(0, 2);
+                                          if (entries.length === 0) return '-';
+                                          return entries.map(([key, value]) => {
+                                              if (typeof value === 'string' && !isNaN(Date.parse(value))) {
+                                                  return `${key}:${new Date(value).toLocaleString('zh-CN')}`;
+                                              }
+                                              return `${key}:${value}`;
+                                          }).join(', ');
+                                      } catch {
+                                          return '-';
+                                      }
+                                  };
+                          
                                   const renderRows = (logs) => {
                                       if (!logs || !logs.length) {
-                                          resultBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-muted-foreground">无匹配数据</td></tr>';
+                                          resultBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-muted-foreground">无匹配数据</td></tr>';
                                           return;
                                       }
                                       resultBody.innerHTML = logs.map(log => `
@@ -168,10 +178,10 @@ public class HtmlEndpoint : EndpointWithoutRequest
                                               <td class="p-4 align-middle">${log.tagRemark ?? '-'}</td>
                                               <td class="p-4 align-middle font-medium">${log.value ?? '-'}</td>
                                               <td class="p-4 align-middle text-muted-foreground">${log.timestamp ? new Date(log.timestamp).toLocaleString('zh-CN') : '-'}</td>
+                                              <td class="p-4 align-middle text-xs text-muted-foreground">${formatParams(log.parameters)}</td>
                                           </tr>`).join('');
                                   };
 
-                                  // 修改：不再转换为 UTC，而是附加 +08:00 时区偏移
                                   const toChinaTime = (value) => value ? `${value}:00+08:00` : null;
 
                                   form.addEventListener('submit', async (e) => {
@@ -188,7 +198,6 @@ public class HtmlEndpoint : EndpointWithoutRequest
                                               deviceName: form.deviceName.value || null,
                                               tagRemark: form.tagRemark.value || null,
                                               values: valuesArray,
-                                              // 使用东八区时间
                                               startTime: toChinaTime(form.startTime.value),
                                               endTime: toChinaTime(form.endTime.value)
                                           };
@@ -205,7 +214,7 @@ public class HtmlEndpoint : EndpointWithoutRequest
                                           renderRows(data);
                                           statusEl.textContent = `查询成功，共找到 ${data.length} 条记录。`;
                                       } catch (err) {
-                                          resultBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-destructive">请求失败</td></tr>';
+                                          resultBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-destructive">请求失败</td></tr>';
                                           statusEl.textContent = `请求失败：${err.message}`;
                                       }
                                   });

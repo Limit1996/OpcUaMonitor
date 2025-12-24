@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using OpcUaMonitor.Domain.Shared;
 using OpcUaMonitor.Domain.Ua;
@@ -72,8 +73,8 @@ public class UaRepository : Repository<Channel>, IUaRepository
     public async Task AddEventLogAsync(EventLog log, CancellationToken cancellationToken)
     {
         await DbContext.Database.ExecuteSqlInterpolatedAsync(
-            $@"INSERT INTO [Opc_EventLogs] ([Id], [EventId], [Timestamp], [Value])
-           VALUES ({log.Id}, {log.EventId}, {log.Timestamp}, {log.Value})",
+            $@"INSERT INTO [Opc_EventLogs] ([Id], [EventId], [Timestamp], [Value], [Parameters])
+           VALUES ({log.Id}, {log.EventId}, {log.Timestamp}, {log.Value}, {JsonSerializer.Serialize(log.Parameters)})",
             cancellationToken);
     }
 

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -67,7 +68,7 @@ public class EventLogCreatedEventHandler : INotificationHandler<EventLogCreatedE
             if (eventLog is { Event.EventType: EventType.Push })
             {
                 var message =
-                    $"区域: {eventLog.Event.Channel.Name}, 标签: {eventLog.Event.Tag.Remark}, 地址: {eventLog.Event.Tag.Name}, 当前值: {eventLog.Value}, 时间: {eventLog.Timestamp:yyyy-MM-dd HH:mm:ss}";
+                    $"区域: {eventLog.Event.Channel.Name}, 标签: {eventLog.Event.Tag.Remark}, 地址: {eventLog.Event.Tag.Name}, 当前值: {eventLog.Value}, 时间: {eventLog.Timestamp:yyyy-MM-dd HH:mm:ss}, 其他参数: {JsonSerializer.Serialize(eventLog.Parameters)}";
 
                 await _messageSender.SendAsync(string.Empty, message);
 
