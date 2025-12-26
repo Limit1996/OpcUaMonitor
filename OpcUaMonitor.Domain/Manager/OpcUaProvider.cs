@@ -97,8 +97,11 @@ public class OpcUaProvider : IOpcUaProvider
         if (e.CurrentState == ServerState.Running)
             return;
 
-        _logger.LogWarning("OPC UA 连接已断开，服务器状态: {Status}，连接：{Connection}", e.CurrentState,
-            session.Endpoint.EndpointUrl);
+        _logger.LogWarning(
+            "OPC UA 连接已断开，服务器状态: {Status}，连接：{Connection}",
+            e.CurrentState,
+            session.Endpoint.EndpointUrl
+        );
 
         _ = Task.Run(async () =>
         {
@@ -109,7 +112,6 @@ public class OpcUaProvider : IOpcUaProvider
                 _logger.LogDebug("断开连接完成，发布断开连接事件...{channel}", _channel);
                 await _mediator.Publish(new ConnectionLostEvent(_channel!));
                 _logger.LogDebug("断开连接事件已发布.");
-                _logger.LogDebug("断开连接事件处理完成.");
             }
             catch (Exception ex)
             {
@@ -117,7 +119,6 @@ public class OpcUaProvider : IOpcUaProvider
             }
         });
     }
-
 
     /// <summary>
     /// OPC UA 断开连接
@@ -131,26 +132,44 @@ public class OpcUaProvider : IOpcUaProvider
 
         if (_session is { Connected: true })
         {
-            if (_subscription != null)
+            try
             {
-                await _session.RemoveSubscriptionAsync(_subscription);
-                await _subscription.DeleteAsync(true);
-                _subscription = null;
-            }
-
-            if (_session.Subscriptions != null)
-            {
-                foreach (var sub in _session.Subscriptions)
+                if (_subscription != null)
                 {
-                    await _session.RemoveSubscriptionAsync(sub);
-                    await sub.DeleteAsync(true);
+                    await _session.RemoveSubscriptionAsync(_subscription);
+                    await _subscription.DeleteAsync(true);
                 }
-            }
 
-            await _session.CloseAsync();
-            _session.Dispose();
-            _session = null;
+                if (_session.Subscriptions != null)
+                {
+                    foreach (var sub in _session.Subscriptions.ToList())
+                    {
+                        await _session.RemoveSubscriptionAsync(sub);
+                        await sub.DeleteAsync(true);
+                    }
+                }
+
+                await _session.CloseAsync();
+            }
+            catch (ServiceResultException ex)
+                when (ex.StatusCode
+                        is StatusCodes.BadSessionIdInvalid
+                            or StatusCodes.BadSessionClosed
+                            or StatusCodes.BadConnectionClosed
+                )
+            {
+                _logger.LogWarning("会话已失效，跳过服务器端清理: {StatusCode}", ex.StatusCode);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "断开连接时发生异常");
+            }
         }
+
+        _subscription?.Dispose();
+        _subscription = null;
+        _session?.Dispose();
+        _session = null;
     }
 
     /// <summary>
@@ -382,7 +401,7 @@ public class OpcUaProvider : IOpcUaProvider
                 var log = @event?.TryCreateLog(value);
                 if (log == null)
                     return;
-                
+
                 log.Parameters = new Dictionary<string, object>
                 {
                     { "SourceTimestamp", notification.Value.SourceTimestamp.ToLocalTime() },

@@ -27,7 +27,7 @@ public static class DependencyInjection
         services.AddDbContext<OpcDbContext>(options =>
         {
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
-            options.LogTo(Console.WriteLine);
+            // options.LogTo(Console.WriteLine);
         });
 
         services.AddScoped<IUaRepository, UaRepository>();
