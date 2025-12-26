@@ -19,7 +19,7 @@ public abstract class Repository<T>
     {
         return await DbContext
             .Set<T>()
-            .FirstOrDefaultAsync(user => user.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
     }
 
     public virtual void Add(T entity)

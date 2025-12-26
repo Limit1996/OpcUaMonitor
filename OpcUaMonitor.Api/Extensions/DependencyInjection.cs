@@ -67,7 +67,7 @@ public static class DependencyInjection
         services.AddHttpClient<IMessageSender, EnterpriseWechatMessageSender>(client =>
         {
             if (string.IsNullOrEmpty(configuration["Sms:EnterpriseWechat:HttpUrl"]))
-                throw new InvalidOperationException("Enterprise Wechat UserIds configuration is missing.");
+                throw new InvalidOperationException("Enterprise Wechat HttpUrl configuration is missing.");
 
             client.BaseAddress = new Uri(configuration["Sms:EnterpriseWechat:HttpUrl"]!);
             client.Timeout = TimeSpan.FromSeconds(5);
