@@ -13,13 +13,13 @@ public class Event : Entity
     public Channel Channel { get; private set; } = null!;
     public Guid ChannelId { get; private set; }
 
-    public bool IsActive { get; private set; }
+    public bool IsActive { get; set; }
 
     // 是否已被注册
     // public bool IsRegistered { get; set; }
 
-    public EventType EventType { get; private set; }
-    public string Remark { get; private set; } = string.Empty;
+    public EventType EventType { get; set; }
+    public string Remark { get; set; } = string.Empty;
 
     // EF Core 构造函数
     private Event()
