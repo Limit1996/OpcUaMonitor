@@ -9,22 +9,24 @@ public class Event : Entity
     public string Name => _name;
     public Tag Tag { get; private set; } = null!;
     public Guid TagId { get; private set; }
-    
+
     public Channel Channel { get; private set; } = null!;
     public Guid ChannelId { get; private set; }
 
     public bool IsActive { get; private set; }
-    
+
     // 是否已被注册
     // public bool IsRegistered { get; set; }
-    
+
     public EventType EventType { get; private set; }
     public string Remark { get; private set; } = string.Empty;
 
     // EF Core 构造函数
-    private Event() { }
+    private Event()
+    {
+    }
 
-    private Event(Guid id, string name, Guid tagId, string remark,Guid channelId)
+    private Event(Guid id, string name, Guid tagId, string remark, Guid channelId)
         : base(id)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -34,27 +36,22 @@ public class Event : Entity
         TagId = tagId;
         Remark = remark;
         IsActive = true;
-        EventType = EventType.ValueChanged;
+        EventType = EventType.LogToDatabase;
         ChannelId = channelId;
     }
 
-    public static Event Create(string name, Tag tag, string remark,Guid channelId)
+    public static Event Create(string name, Tag tag, string remark, Guid channelId)
     {
         ArgumentNullException.ThrowIfNull(tag);
-        return new(Guid.NewGuid(), name, tag.Id, remark,channelId);
+        return new(Guid.NewGuid(), name, tag.Id, remark, channelId);
     }
 
     // 改用领域方法
     public EventLog? TryCreateLog(object value)
     {
-        if (value is Array array)
-        {
-            value = $"[{string.Join(",", array.Cast<object>())}]";
-        }
-
         return !IsActive
             ? null
-            : EventLog.Create(this, value?.ToString() ?? string.Empty);
+            : EventLog.Create(this, value);
     }
 
 
@@ -75,13 +72,15 @@ public class EventLog : Entity
     public Guid EventId { get; private set; }
     public Event Event { get; private set; }
     public DateTime Timestamp { get; private set; } = DateTime.Now;
-    
-    public Dictionary<string,object> Parameters { get; set; } = new();
-    public string Value { get; private set; }
 
-    private EventLog() { }
+    public Dictionary<string, object> Parameters { get; set; } = new();
+    public object Value { get; private set; }
 
-    private EventLog(Guid id, Event @event, string value)
+    private EventLog()
+    {
+    }
+
+    private EventLog(Guid id, Event @event, object value)
         : base(id)
     {
         Event = @event;
@@ -90,12 +89,12 @@ public class EventLog : Entity
         Timestamp = DateTime.Now;
     }
 
-    public static EventLog Create(Event @event, string value) => new(Guid.NewGuid(), @event, value);
+    public static EventLog Create(Event @event, object value) => new(Guid.NewGuid(), @event, value);
 }
 
 public enum EventType
 {
-    ValueChanged,
-    Custom,
-    Push
+    LogToDatabase,
+    LogToFile,
+    LogToSms
 }

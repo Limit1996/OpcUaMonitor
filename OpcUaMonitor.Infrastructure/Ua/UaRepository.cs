@@ -72,9 +72,15 @@ public class UaRepository : Repository<Channel>, IUaRepository
     /// <param name="cancellationToken"></param>
     public async Task AddEventLogAsync(EventLog log, CancellationToken cancellationToken)
     {
+        var logValue = log.Value switch
+        {
+            Array array => $"[{string.Join(",", array.Cast<object>())}]",
+            _ => log.Value.ToString() ?? string.Empty
+        };
+        
         await DbContext.Database.ExecuteSqlInterpolatedAsync(
             $@"INSERT INTO [Opc_EventLogs] ([Id], [EventId], [Timestamp], [Value], [Parameters])
-           VALUES ({log.Id}, {log.EventId}, {log.Timestamp}, {log.Value}, {JsonSerializer.Serialize(log.Parameters)})",
+           VALUES ({log.Id}, {log.EventId}, {log.Timestamp}, {logValue}, {JsonSerializer.Serialize(log.Parameters)})",
             cancellationToken);
     }
 

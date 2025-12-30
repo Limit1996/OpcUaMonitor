@@ -13,7 +13,11 @@ public class OpcUaManager : IAsyncDisposable
 
     public Dictionary<Channel, IOpcUaProvider> OpcUaProviders => _opcUaProviders;
 
-    public OpcUaManager(IMediator mediator, ILogger<OpcUaManager> logger, ILoggerFactory loggerFactory)
+    public OpcUaManager(
+        IMediator mediator,
+        ILogger<OpcUaManager> logger,
+        ILoggerFactory loggerFactory
+    )
     {
         _mediator = mediator;
         _logger = logger;
@@ -27,31 +31,45 @@ public class OpcUaManager : IAsyncDisposable
     )
     {
         ArgumentNullException.ThrowIfNull(channels);
-        //ArgumentNullException.ThrowIfNull(events);
 
         var providerLogger = _loggerFactory.CreateLogger<OpcUaProvider>();
         foreach (var channel in channels)
         {
             var provider = new OpcUaProvider(_mediator, providerLogger);
             var isConnected = await provider.ConnectAsync(
-                config => { config.ApplicationName = "OpcUaMonitor"; },
+                config =>
+                {
+                    config.ApplicationName = "OpcUaMonitor";
+                },
                 channel,
                 cancellationToken
             );
             if (!isConnected)
                 continue;
-            await provider.RegisterDataChangeHandler(
-                [.. events.Where(e => e.ChannelId == channel.Id)]
-            );
+
+            var tasks = events
+                .AsParallel()
+                .Where(e => e.ChannelId == channel.Id)
+                .Select(e => provider.RegisterDataChangeHandler(e))
+                .ToArray();
+
+            await Task.WhenAll(tasks);
             _opcUaProviders.Add(channel, provider);
         }
     }
 
     public async ValueTask DisposeAsync()
     {
-        foreach (var provider in _opcUaProviders.Values)
-        {
-            await provider.DisposeAsync();
-        }
+        // foreach (var provider in _opcUaProviders.Values)
+        // {
+        //     await provider.DisposeAsync();
+        // }
+
+        var tasks = _opcUaProviders
+            .Values.AsParallel()
+            .Select(provider => provider.DisposeAsync().AsTask())
+            .ToArray();
+
+        await Task.WhenAll(tasks);
     }
 }

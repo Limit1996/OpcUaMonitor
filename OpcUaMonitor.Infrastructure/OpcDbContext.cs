@@ -19,7 +19,7 @@ public class OpcDbContextFactory
     public static OpcDbContext Create(string connectionString)
     {
         var optionsBuilder = new DbContextOptionsBuilder<OpcDbContext>();
-        optionsBuilder.UseSqlServer("Data Source=172.18.16.51;Initial Catalog=OpcUaDb;User Id=sa;Password=Hh@12345678;TrustServerCertificate=True;");
+        optionsBuilder.UseSqlServer("Data Source=.;Initial Catalog=OpcUaDb;User Id=sa;Password=1996;TrustServerCertificate=True;");
 
         return new OpcDbContext(optionsBuilder.Options);
     }

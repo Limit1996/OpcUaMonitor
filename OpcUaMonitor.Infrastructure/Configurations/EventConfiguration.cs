@@ -17,7 +17,7 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
         builder.Property(x => x.TagId).IsRequired();
 
         builder.Property(x => x.ChannelId).IsRequired();
-        
+
         builder
             .HasOne(c => c.Channel)
             .WithMany()
@@ -39,7 +39,6 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
             .HasIndex(e => new { e.TagId, e.IsActive })
             .HasDatabaseName("IX_Opc_Events_TagId_IsActive")
             .HasFilter("[IsActive] = 1");
-        
     }
 }
 
@@ -50,14 +49,17 @@ public class EventLogConfiguration : IEntityTypeConfiguration<EventLog>
         builder.ToTable("Opc_EventLogs");
         builder.HasKey(c => c.Id);
         builder.Property(x => x.EventId).IsRequired();
-        builder.Property(x => x.Value).HasMaxLength(500).IsRequired();
+        builder.Property(x => x.Value).HasMaxLength(500).IsRequired().HasConversion(
+            v => v.ToString(),
+            v => v ?? string.Empty
+        );
         builder.Property(x => x.Timestamp).IsRequired().HasDefaultValue(DateTime.Now);
 
         // builder.Ignore(x => x.Parameters);
         builder.Property(x => x.Parameters)
             .HasConversion(
                 v => JsonSerializer.Serialize(v, JsonSerializerOptions.Default),
-                v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, JsonSerializerOptions.Default) 
+                v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, JsonSerializerOptions.Default)
                      ?? new Dictionary<string, object>()
             )
             .HasColumnType("nvarchar(max)")

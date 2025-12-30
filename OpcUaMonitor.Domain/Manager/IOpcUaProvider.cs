@@ -31,6 +31,6 @@ public interface IOpcUaProvider : IAsyncDisposable
         CancellationToken cancellationToken = default
     );
 
-    internal Task RegisterDataChangeHandler(Event[] events);
-    internal Task UnregisterDataChangeHandler(Event[] events);
+    internal Task RegisterDataChangeHandler(Event @event);
+    internal Task UnregisterDataChangeHandler(Event @event);
 }

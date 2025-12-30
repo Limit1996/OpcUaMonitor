@@ -18,6 +18,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
 
 builder.Services.AddSignalR();
+builder.Services.AddMemoryCache();
 
 builder.Services.AddLogging(loggingBuilder =>
 {

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
@@ -56,39 +57,51 @@ public class OpcUaProvider : IOpcUaProvider
                 ApplicationCertificate = new CertificateIdentifier(),
                 AutoAcceptUntrustedCertificates = true,
             },
-            ClientConfiguration = new ClientConfiguration { DefaultSessionTimeout = 60000 },
+            ClientConfiguration = new ClientConfiguration { DefaultSessionTimeout = 5000 },
         };
 
         config(internalConfig);
+        try
+        {
+            var endpointDescription = await CoreClientUtils.SelectEndpointAsync(
+                internalConfig,
+                channel.Url,
+                false,
+                cancellationToken
+            );
+            var endpointConfiguration = EndpointConfiguration.Create(internalConfig);
+            var endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
 
-        var endpointDescription = await CoreClientUtils.SelectEndpointAsync(
-            internalConfig,
-            channel.Url,
-            false,
-            cancellationToken
-        );
-        var endpointConfiguration = EndpointConfiguration.Create(internalConfig);
-        var endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
+            _session = await Session.CreateAsync(
+                internalConfig,
+                null,
+                endpoint,
+                false,
+                false,
+                internalConfig.ApplicationName,
+                (uint)internalConfig.ClientConfiguration.DefaultSessionTimeout,
+                new UserIdentity(new AnonymousIdentityToken()),
+                null,
+                cancellationToken
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "连接到 OPC UA 服务器失败: {Url}",
+                channel.Url
+            );
+            return false;
+        }
 
-        _session = await Session.CreateAsync(
-            internalConfig,
-            null,
-            endpoint,
-            false,
-            false,
-            internalConfig.ApplicationName,
-            (uint)internalConfig.ClientConfiguration.DefaultSessionTimeout,
-            new UserIdentity(new AnonymousIdentityToken()),
-            null,
-            cancellationToken
-        );
 
         var isConnected = _session?.Connected == true;
         if (!isConnected)
             return isConnected;
         _channel = channel;
         _session!.KeepAlive += Session_KeepAlive;
-        _session.KeepAliveInterval = 10000; // 10秒心跳
+        _session.KeepAliveInterval = 5000; // 5秒心跳
         return isConnected;
     }
 
@@ -153,10 +166,10 @@ public class OpcUaProvider : IOpcUaProvider
             }
             catch (ServiceResultException ex)
                 when (ex.StatusCode
-                        is StatusCodes.BadSessionIdInvalid
-                            or StatusCodes.BadSessionClosed
-                            or StatusCodes.BadConnectionClosed
-                )
+                          is StatusCodes.BadSessionIdInvalid
+                          or StatusCodes.BadSessionClosed
+                          or StatusCodes.BadConnectionClosed
+                     )
             {
                 _logger.LogWarning("会话已失效，跳过服务器端清理: {StatusCode}", ex.StatusCode);
             }
@@ -349,111 +362,93 @@ public class OpcUaProvider : IOpcUaProvider
     /// <summary>
     /// 注册数据变化处理器
     /// </summary>
-    /// <param name="events"></param>
-    public async Task RegisterDataChangeHandler(Event[] events)
+    /// <param name="event"></param>
+    public async Task RegisterDataChangeHandler(Event @event)
     {
         EnsureConnected();
-        ArgumentNullException.ThrowIfNull(events);
+        ArgumentNullException.ThrowIfNull(@event);
 
-        if (events.Length == 0)
-            return;
-
-        _subscription = new Subscription(_session!.DefaultSubscription)
+        _subscription ??= new Subscription(_session!.DefaultSubscription)
         {
-            PublishingInterval = 100,
+            PublishingInterval = @event.Tag.ScanRate,
             PublishingEnabled = true,
         };
 
-        var monitoredItems = events
-            .Select(e => new MonitoredItem
-            {
-                StartNodeId = NodeId.Parse(e.Tag.Name),
-                AttributeId = Attributes.Value,
-                SamplingInterval = 100,
-            })
-            .ToList();
-
-        foreach (var item in monitoredItems)
+        var monitoredItem = new MonitoredItem
         {
-            item.Notification += async (_, eventArgs) =>
-            {
-                if (eventArgs.NotificationValue is not MonitoredItemNotification notification)
-                {
-                    _logger.LogWarning("收到不支持的通知类型.");
-                    return;
-                }
+            StartNodeId = NodeId.Parse(@event.Tag.Name),
+            AttributeId = Attributes.Value,
+            SamplingInterval = @event.Tag.ScanRate,
+        };
 
-                //检测数据是否bad
-                if (StatusCode.IsBad(notification.Value.StatusCode))
-                {
-                    _logger.LogWarning(
-                        "标签 {Tag} 数据状态异常: {StatusCode}",
-                        item.StartNodeId,
-                        notification.Value.StatusCode
-                    );
-                    return;
-                }
-
-                var value = notification.Value.WrappedValue.Value;
-
-                var @event = events.FirstOrDefault(e => e.Tag.Name == item.StartNodeId.ToString());
-
-                var log = @event?.TryCreateLog(value);
-                if (log == null)
-                    return;
-
-                log.Parameters = new Dictionary<string, object>
-                {
-                    { "SourceTimestamp", notification.Value.SourceTimestamp.ToLocalTime() },
-                    { "ServerTimestamp", notification.Value.ServerTimestamp.ToLocalTime() },
-                    { "CurrentNodeId", item.StartNodeId },
-                };
-                //Console.WriteLine($"Event: {@event?.Name}, Value: {log.Value}, Timestamp: {log.Timestamp}");
-                //await _uaRepository.AddEventLogAsync(log, CancellationToken.None);
-                await _mediator.Publish(new EventLogCreatedEvent(log), CancellationToken.None);
-            };
-            _subscription.AddItem(item);
-            _session!.AddSubscription(_subscription);
+        if (_subscription.MonitoredItems.Contains(monitoredItem))
+        {
+            _logger.LogInformation(
+                "标签 {Tag} 已经被监控，跳过重复注册.",
+                monitoredItem.StartNodeId
+            );
+            return;
         }
 
+        monitoredItem.Notification += async (_, eventArgs) =>
+        {
+            if (eventArgs.NotificationValue is not MonitoredItemNotification notification)
+            {
+                _logger.LogWarning("收到不支持的通知类型.");
+                return;
+            }
+
+            //检测数据是否bad
+            if (StatusCode.IsBad(notification.Value.StatusCode))
+            {
+                _logger.LogWarning(
+                    "标签 {Tag} 数据状态异常: {StatusCode}",
+                    monitoredItem.StartNodeId,
+                    notification.Value.StatusCode
+                );
+                return;
+            }
+
+            var value = notification.Value.WrappedValue.Value;
+
+            var log = @event.TryCreateLog(value);
+            if (log == null)
+                return;
+
+            log.Parameters = new Dictionary<string, object>
+            {
+                { "SourceTimestamp", notification.Value.SourceTimestamp.ToLocalTime() },
+                { "ServerTimestamp", notification.Value.ServerTimestamp.ToLocalTime() },
+                { "CurrentNodeId", monitoredItem.StartNodeId },
+            };
+            await _mediator.Publish(new EventLogCreatedEvent(log), CancellationToken.None);
+        };
+        _subscription.AddItem(monitoredItem);
+        _session!.AddSubscription(_subscription);
         await _subscription.CreateAsync();
     }
 
     /// <summary>
     /// 注销数据变化处理器
     /// </summary>
-    /// <param name="events"></param>
-    public async Task UnregisterDataChangeHandler(Event[] events)
+    /// <param name="event"></param>
+    public async Task UnregisterDataChangeHandler(Event @event)
     {
         EnsureConnected();
-        ArgumentNullException.ThrowIfNull(events);
+        ArgumentNullException.ThrowIfNull(@event);
 
-        if (_subscription == null)
-            return;
+        var itemToRemove = _subscription?.MonitoredItems.FirstOrDefault(mi =>
+            @event.Tag.Name == mi.StartNodeId.ToString()
+        );
 
-        var itemsToRemove = _subscription
-            .MonitoredItems.Where(mi => events.Any(e => e.Tag.Name == mi.StartNodeId.ToString()))
-            .ToList();
+        _subscription?.RemoveItem(itemToRemove);
 
-        foreach (var item in itemsToRemove)
-        {
-            _subscription.RemoveItem(item);
-        }
-
-        if (!_subscription.MonitoredItems.Any())
-        {
-            await _session!.RemoveSubscriptionAsync(_subscription);
-            await _subscription.DeleteAsync(true);
-            _subscription = null;
-        }
-        else
-        {
-            await _subscription.ApplyChangesAsync();
-        }
+        await _subscription?.ApplyChangesAsync()!;
     }
 
     public ValueTask DisposeAsync() => DisconnectAsync();
 
+    [MemberNotNull(nameof(_session))]
     private void EnsureConnected()
     {
         if (_session?.Connected != true)

@@ -9,7 +9,7 @@ public class EventLogFilter
     private int _pageNumber = 1;
     private int _pageSize = 20;
 
-    public EventType Type { get; set; } = EventType.ValueChanged;
+    public EventType Type { get; set; } = EventType.LogToDatabase;
 
     public DateTime? From { get; set; }
     public DateTime? To { get; set; }
